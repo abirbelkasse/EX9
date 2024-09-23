@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fr">
+	<head>
+		<meta charset="UTF-8"/>
+		<title>Casse-briques</title>
+		<script type="text/javascript" src="main.js"></script>
+	</head>
+	<body>
+<style>
+@media screen and (max-width: 992px)  {
+  #moleContainer {
+    display: none !important;
+  }
+}
+
+#moleContainer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 25rem;
+  margin: 0 auto;
+}
+
+#moleField {
+  display: grid;
+  grid-template-columns: repeat(4, 6.25rem);
+  grid-template-rows: repeat(4, 6.25rem);
+  margin: 2rem 0;
+  background-color: #101010;
+}
+
+
+.moleHole {
+  width: 6.25rem;
+  height: 6.25rem;
+  background-color: #fdd33c;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.moleHole.active {
+  background-color: #FFFFFF;
+}
+
+#moleStartButton {
+  font-size: 1rem;
+  padding: 0.625rem 1rem;
+  background-color: #333;
+  color: #FFF;
+  border: none;
+  cursor: pointer;
+  position: absolute;
+  margin-top: -1rem;
+}
+
+#moleStartButton:hover {
+  background-color: #666;
+}
+
+#moleBoardWrapper {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+#moleBestScore
+{
+  margin-top: 0.25rem;
+  color: #666;
+}
+#moleScore, #moleBestScore,
+#moleTimer {
+  font-size: 1rem;
+}
+</style>
+
+<div id="moleContainer">
+<div id="moleField">
+<div class="moleHole"></div>
+<div class="moleHole"></div>
+<div class="moleHole"></div>
+<div class="moleHole"></div>
+<div class="moleHole"></div>
+<div class="moleHole"></div>
+<div class="moleHole"></div>
+<div class="moleHole"></div>
+<div class="moleHole"></div>
+<div class="moleHole"></div>
+<div class="moleHole"></div>
+<div class="moleHole"></div>
+<div class="moleHole"></div>
+<div class="moleHole"></div>
+<div class="moleHole"></div>
+<div class="moleHole"></div>
+</div>
+<button id="moleStartButton" onclick="startMoleGame()">Jouer</button>
+<div id="moleBoardWrapper">
+<div id="moleScoreWrapper">
+<div id="moleScore">Score : 0</div>
+<div id="moleBestScore">Meilleur Score : 0</div>
+</div>
+<div id="moleTimer">Temps restant : 30</div>
+</div>
+</div>
+
+<script>
+(function() {
+  const moleScoreElement = document.getElementById("moleScore");
+  const moleBestScoreElement = document.getElementById("moleBestScore");
+  const moleTimerElement = document.getElementById("moleTimer");
+  const moleStartButton = document.getElementById("moleStartButton");
+  const moleHoles = document.querySelectorAll(".moleHole");
+  
+  let moleScore = 0;
+  let moleBestScore = 0;
+  let moleTimer = 30; // Durée du jeu en secondes
+  let moleGameTimer;
+  let activeMoles = [];
+  let initialMoleInterval = 1500;
+  let moleTimeout;
+  let moleGameActive = false;
+  
+  function moleClicked() {
+    if (this.classList.contains("active")) {
+      moleScore++;
+      this.classList.remove("active");
+      activeMoles.splice(activeMoles.indexOf(this), 1);
+      clearTimeout(moleTimeout);
+      updateMoleScore();
+      
+      // Réinitialiser le timer à 3 secondes
+      clearTimeout(moleTimeout);
+      moleTimeout = setTimeout(() => {
+        endMoleGame("Trop lent");
+      }, 1500);
+    } else {
+      endMoleGame("Il faut améliorer ta précision !");
+      if (moleTimeout) {
+        clearTimeout(moleTimeout);
+        moleTimeout = null;
+      }
+    }
+  }
+  
+  function updateMoleScore() {
+    moleScoreElement.textContent = `Score : ${moleScore}`;
+  }
+  
+  function updateMoleBestScore() {
+    moleBestScoreElement.textContent = `Meilleur Score : ${moleBestScore}`;
+  }
+  
+  function updateMoleTimer() {
+    moleTimerElement.textContent = `Temps restant : ${moleTimer}`;
+  }
+  
+  function generateMole() {
+    if (!moleGameActive) {
+      return;
+    }
+    
+    if (activeMoles.length < 2) {
+      const randomIndex = Math.floor(Math.random() * moleHoles.length);
+      const moleHole = moleHoles[randomIndex];
+      
+      // Vérifier si le trou est déjà actif
+      if (!moleHole.classList.contains("active")) {
+        moleHole.classList.add("active");
+        moleHole.addEventListener("click", moleClicked);
+        activeMoles.push(moleHole);
+        
+      }
+      // Augmenter la vitesse d'apparition à chaque point
+      initialMoleInterval -= 200;
+      if (initialMoleInterval < 300) {
+        initialMoleInterval = 300; // Limiter la vitesse minimale
+      }
+    }
+    
+    setTimeout(generateMole, initialMoleInterval);
+  }
+  
+  function endMoleGame(reason) {
+    clearInterval(moleGameTimer);
+    moleGameActive = false;
+    activeMoles.forEach((mole) => {
+      mole.classList.remove("active");
+      mole.removeEventListener("click", moleClicked);
+    });
+    activeMoles = [];
+    moleStartButton.disabled = false;
+    moleStartButton.style.display = "block";
+    
+    if (moleScore > moleBestScore) {
+      moleBestScore = moleScore;
+      updateMoleBestScore();
+    }
+    
+    alert(`Fin du jeu de la taupe ! Votre score final est de ${moleScore}. Raison : ${reason}`);
+  }
+  
+  function hideMoleHoles() {
+    moleHoles.forEach((moleHole) => {
+      moleHole.addEventListener("click", moleClicked);
+      moleHole.classList.remove("active");
+    });
+  }
+  
+  function startMoleGame() {
+    moleGameActive = true;
+    moleScore = 0;
+    moleTimer = 30;
+    updateMoleScore();
+    updateMoleBestScore();
+    updateMoleTimer();
+    moleStartButton.disabled = true;
+    moleGameTimer = setInterval(() => {
+      moleTimer--;
+      updateMoleTimer();
+      if (moleTimer === 0) {
+        clearInterval(moleGameTimer);
+        endMoleGame("Temps écoulé");
+      }
+    }, 1000);
+    
+    moleStartButton.style.display = "none";
+    
+    // Générer la première taupe
+    generateMole();
+    
+    // Initialiser le timeout pour la fin du jeu si trop lent
+    moleTimeout = setTimeout(() => {
+      endMoleGame("Trop lent");
+    }, 1500);
+  }
+  
+  hideMoleHoles();
+  moleStartButton.addEventListener("click", startMoleGame);
+})();
+</script>
+	       </body>
+          </html>
